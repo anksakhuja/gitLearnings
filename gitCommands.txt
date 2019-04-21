@@ -18,6 +18,9 @@ git commit -m"Ankita added changes"   --Commit changes to Remote with a message
 git push origin branchname       --Push final commit to remote . In this case branchname is master
 
 vi ankita.txt.   --To open file in vi editor
-
+Press Escape then
 :q!     --to quit vi editor 
 :wq!    --to quit with a save
+
+How to see the difference : 
+git diff filename
