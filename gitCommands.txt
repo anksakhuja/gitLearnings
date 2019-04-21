@@ -1,0 +1,23 @@
+1. Create SSH keys
+2. Add SSH keys to GIT Account
+3. Create new Repository
+Copy SSH link say ankita.ssh from the repo
+
+Git commands : 
+git clone ankita.ssh.     --Used to clone git repo
+touch test.txt                -- Creates file
+echo "ankita is best" >> test.txt. --Used to write text to a file
+
+Now File test.txt has text "ankita is best"
+
+Now I need to push the changes
+
+git status                               --Used to see the differences in branches
+git add test.txt OR  git add .       --First step of git commit
+git commit -m"Ankita added changes"   --Commit changes to Remote with a message
+git push origin branchname       --Push final commit to remote . In this case branchname is master
+
+vi ankita.txt.   --To open file in vi editor
+
+:q!     --to quit vi editor 
+:wq!    --to quit with a save
