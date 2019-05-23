@@ -1,0 +1,132 @@
+
+# Discussion: Options for Embeddings
+
+Embeddings are flexible and there are many options for using them in sports. We have discussed different options for embeddings (see Mike's summary in this directory). This page aims to provide a brief summary. There are usually two version of a model: instantaneous: apply embeddings only to a current match state, and historical: condition on the observation history.
+
+| ![emb-yudong](emb-yudong.jpg) |
+| ------------------------------------------------------------ |
+| Yudong's skip-gram-style model for learning embeddings. A player embedding is trained to predict the player's next action given a history of states. |
+
+## Available Statistical Information
+
+Our basic idea are event logs of the form
+
+![e1](https://latex.codecogs.com/gif.latex?$\mathbf{x}_t,a_t,\mathit{player}_t$)
+
+with integer time stamps *t*. The local features ![e2](https://latex.codecogs.com/gif.latex?$\mathbf{x}_t$) include things like game time, *x-y* location, score differential, manpower etc. At time *t* action ![e3](https://latex.codecogs.com/gif.latex?$a_t$) is taken by ![e4](https://latex.codecogs.com/gif.latex?$\mathit{player}_t$). 
+
+Focusing on player *i*, the data for this player is given by
+
+![e5](https://latex.codecogs.com/gif.latex?$\mathbf{x}_t,a_t,\mathit{player}_t=i.$)
+
+## Discriminative Embeddings: Predict States and Actions.
+
+#### Current-Time Version
+
+A player embedding can be used to predict the current state-features and action:
+
+![e6](https://latex.codecogs.com/gif.latex?%24P%28%5Cmathbf%7Bx%7D_%7Bt%7D%2Ca_%7Bt%7D%7C%5Cmathit%7Bplayer%7D_t%3Di%29.%24)
+
+
+This can be learned using [skip-gram techniques](https://bitbucket.org/sportlogiqteam/spg-sfu-waterloo-project/src/master/foundations/README.md) . It seems similar to [Michael's 'causal model'](https://bitbucket.org/sportlogiqteam/spg-sfu-waterloo-project/src/master/embeddings/VI%20Player%20Embeddings%20Summary.pdf). The equation can be decomposed into quantities of interest for sports: 
+
+![e7](https://latex.codecogs.com/gif.latex?%24P%28%5Cmathbf%7Bx%7D_%7Bt%7D%2Ca_%7Bt%7D%7C%5Cmathit%7Bplayer%7D_t%3Di%29%20%3D%20P%28%5Cmathbf%7Bx%7D_%7Bt%7D%7C%20%5Cmathit%7Bplayer%7D_t%3Di%29%20%5Ctimes%20P%28a_t%7C%5Cmathbf%7Bx%7D_%7Bt%7D%2C%5Cmathit%7Bplayer%7D_%7Bt%7D%3Di%29%20%24)
+
+
+The second term can be interpreted as the player's policy, and the first as the probability of finding player *i* in a specific location in state-feature space. Thus the first arguably captures a player's style or role. Thus it would make sense to 
+
+1. cluster players according to an embedding for ![e8](https://latex.codecogs.com/gif.latex?%24P%28%5Cmathbf%7Bx%7D_%7Bt%7D%7C%20%5Cmathit%7Bplayer%7D_t%3Di%29%20%5Ctimes%20%24), and 
+2. evaluate them according to their actions modelled by the policy distribution ![e9](https://latex.codecogs.com/gif.latex?%24P%28a_t%7C%5Cmathbf%7Bx%7D%7Bt%7D%2C%5Cmathit%7Bplayer%7D%7Bt%7D%3Di%29%24) 
+
+See our [Sloan paper](http://www.sloansportsconference.com/wp-content/uploads/2017/02/1625.pdf) on comparing apples-to-apples.
+
+#### Historical Version
+
+A [marked point process model](https://bitbucket.org/sportlogiqteam/spg-sfu-waterloo-project/src/master/foundations/README.md) aims to predict the next observation given the history so far: 
+
+![e10](https://latex.codecogs.com/gif.latex?%24P%28%5Cmathbf%7Bx%7D_%7Bt%7D%2Ca_%7Bt%7D%7C%5Cmathbf%7Bx%7D_%7B%3C%20t%7D%2Ca_%7B%3Ct%7D%29.%24)
+
+Adding the information that player *i* acts at time *t*, we can consider a conditional model 
+
+![e11](https://latex.codecogs.com/gif.latex?%24P%28%5Cmathbf%7Bx%7D_%7Bt%7D%2Ca_%7Bt%7D%7C%5Cmathbf%7Bx%7D_%7B%3C%20t%7D%2Ca_%7B%3Ct%7D%2C%20%5Cmathit%7Bplayer%7D_t%3Di%29.%24)
+
+Reasons why this quantity is of interest include the following.
+
+1. We have proven a theorem for our goal impact metric that says that the impact metric is equivalent to the expected value for a team that results when we replace the conditional probability for the average player with that for a specific player (i.e. replace the first equation with the second). 
+
+2. As before, the equation can be decomposed into quantities of interest for sports: $P(\mathbf{x}_{t},a_{t}|\mathbf{x}_{< t},a_{<t}, \mathit{player}_t=i) = $
+
+   ![e12](https://latex.codecogs.com/gif.latex?%24P%28%5Cmathbf%7Bx%7D_%7Bt%7D%7C%5Cmathbf%7Bx%7D_%7B%3C%20t%7D%2Ca_%7B%3Ct%7D%2C%20%5Cmathit%7Bplayer%7D_t%3Di%29%20%5Ctimes%20P%28a_t%7C%5Cmathbf%7Bx%7D_%7B%5Cleq%20t%7D%2C%5Cmathit%7Bplayer%7D_%7Bt%7D%3Di%2Ca_%7B%3Ct%7D%29%24)
+
+   The second term can be interpreted as the player's policy, and the first as the probability of finding player $i$ in a specific location in state-feature space, both as functions of the match history.
+   
+   
+
+## Embedding Players + Encoding States/Actions
+
+An elegant possibility is to build a generative model over states and actions, using a conditional VAE that conditions on an embedding for a player.  Formally, we would have a code $z$ for states and actions, generated by a VAE that conditions on current player: $P(\mathbf{x}_{t},a_{t}|z,\mathit{player}_t=i)$
+
+where the code *z* is generated by a conditional VAE model
+
+![e13](https://latex.codecogs.com/gif.latex?%24q%28%5Cmathbf%7Bx%7D_%7Bt%7D%2Ca_%7Bt%7D%7Cplayer_t%20%3Di%29%24) . 
+
+The historical version conditions also on the history of actions and states. This extends the variational auto-encoder model for point processes described  [here](https://www.borealisai.com/en/publications/variational-auto-encoder-model-stochastic-point-process/)  from CVPR 2019.
+
+## Generate Players: Conditional VAE
+
+A generative model defines a distribution over players. One possibility champoined by Galen is to use a conditional VAE (see [tutorial](https://arxiv.org/abs/1606.05908)) to model 
+
+![e14](https://latex.codecogs.com/gif.latex?%24P%28%5Cmathit%7Bplayer%7D_t%3Di%7C%5Cmathbf%7Bx%7D_%7Bt%7D%2Ca_%7Bt%7D%29%24)
+
+A conditional VAE produces an encoding ![e15](https://latex.codecogs.com/gif.latex?%24q%28%5Cmathit%7Bplayer_t%7D%3Di%7C%5Cmathbf%7Bx%7D_%7Bt%7D%2Ca_%7Bt%7D%29%24) which depends on the observed features. Therefore the *conditional VAE does not produce a single embedding for each player*. 
+
+The history version is especially interesting if we include other players in the history: 
+
+$P(\mathit{player}_t=i|\mathbf{x}_{\leq t},a_{\leq t},\mathit{player}_{\leq t})$,
+
+because then it captures interactions among players. For example the model would represent the information usually visualized in a *passing graph.*
+
+## Generating Players, States, and Actions: Point Process Model
+
+A variational auto-encoder  could produce a code $z_t$,  that generates the next observation:
+
+$ P(\mathbf{x}_{t},a_{t},\mathit{player}_t|z_t)$
+
+Several models of this type assume independence of the modelled components like Mikes VI Model, e.g.
+
+$ P(\mathbf{x}_{t},a_{t},\mathit{player}_t|z_t) = P(\mathbf{x}_{t},a_{t}|z_t) \times P(\mathit{player}_t|z_t)$
+
+The encoding distribution provides a joint embedding of the three components $\mathbf{x}_{t},a_{t},\mathit{player}_t$ (see [general explanation](https://bitbucket.org/sportlogiqteam/spg-sfu-waterloo-project/src/master/embeddings/README.md)). Mike's model VI proposes decomposing the encoding distribution to get a component for players only:
+
+$ Q(z_t|\mathbf{x}_{t},a_{t},\mathit{player}_t) = Q(z_t|\mathbf{x}_{t},a_{t}) \times Q(z_t|\mathit{player}_t)$.
+
+In the history version, the code can also depend on the previous history
+
+![e18](https://latex.codecogs.com/gif.latex?%24%20Q%28z_t%7C%5Cmathbf%7Bx%7D%7Bt%7D%2Ca%7Bt%7D%2C%5Cmathit%7Bplayer%7Dt%2C%5Cmathbf%7Bx%7D%7B%5Cleq%20t%7D%2Ca_%7B%5Cleq%20t%7D%2C%29%24)
+
+If we assume conditional independence and allow the code to depend on the history, we have an extension of the variational auto-encoder model for point processes described  [here](https://www.borealisai.com/en/publications/variational-auto-encoder-model-stochastic-point-process/)  from CVPR 2019. This would be a powerful and exciting extension of this CVPR paper.
+
+## Questions
+
+- How does Mike's model capture correlations between state and player?
+- Is it really necessary to embed states and actions if all we want is player embeddings?
+
+
+
+Hi $z = x + y $.
+
+$$a^2 + b^2 = c^2$$
+
+$$\begin{vmatrix}a & b
+\\
+c & d
+\end{vmatrix}=ad-bc$$`
+
+
+
+
+
+
+
+
+
